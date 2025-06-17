@@ -95,6 +95,35 @@ def visualize_results(pil_image, gaze_points, object_boxes, gazed_objects, yolo_
     
     return overlay_image
 
+# 可视化热图
+def visualize_heatmap(pil_image, heatmap, bbox=None, inout_score=None):
+    """Visualize gaze heatmap for a single person"""
+    if isinstance(heatmap, torch.Tensor):
+        heatmap = heatmap.detach().cpu().numpy()
+    heatmap = Image.fromarray((heatmap * 255).astype(np.uint8)).resize(pil_image.size, Image.Resampling.BILINEAR)
+    heatmap = plt.cm.jet(np.array(heatmap) / 255.)
+    heatmap = (heatmap[:, :, :3] * 255).astype(np.uint8)
+    heatmap = Image.fromarray(heatmap).convert("RGBA")
+    heatmap.putalpha(90)
+    overlay_image = Image.alpha_composite(pil_image.convert("RGBA"), heatmap)
+
+    if bbox is not None:
+        width, height = pil_image.size
+        xmin, ymin, xmax, ymax = bbox
+        draw = ImageDraw.Draw(overlay_image)
+        draw.rectangle([xmin * width, ymin * height, xmax * width, ymax * height], 
+                      outline="lime", width=int(min(width, height) * 0.01))
+
+        if inout_score is not None:
+            text = f"in-frame: {inout_score:.2f}"
+            text_width = draw.textlength(text)
+            text_height = int(height * 0.01)
+            text_x = xmin * width
+            text_y = ymax * height + text_height
+            draw.text((text_x, text_y), text, fill="lime", 
+                     font=ImageFont.load_default(size=int(min(width, height) * 0.05)))
+    return overlay_image
+
 def main():
     # 设置图片路径和输出目录
     image_path = "testimg_gaze_4.png"  # 在这里修改你的图片路径
@@ -130,6 +159,18 @@ def main():
     with torch.no_grad():
         output = gaze_model(input)
 
+    # 单独输出每个人的热力图（类似demo.py）
+    for i in range(len(bboxes)):
+        plt.figure()
+        result = visualize_heatmap(image, output['heatmap'][0][i], 
+                                 norm_bboxes[0][i], 
+                                 output['inout'][0][i] if output['inout'] is not None else None)
+        plt.imshow(result)
+        plt.axis('off')
+        plt.savefig(os.path.join(save_dir, f'heatmap_{i}.png'))
+        plt.close()
+        print(f"热力图 {i} 已保存到 {os.path.join(save_dir, f'heatmap_{i}.png')}")
+
     # 检测物体
     object_boxes = detect_objects(image, yolo_model)
 
@@ -148,7 +189,7 @@ def main():
     
     # 保存结果
     result_image.save(os.path.join(save_dir, 'gaze_object_detection_result.png'))
-    print(f"Results saved to {os.path.join(save_dir, 'gaze_object_detection_result.png')}")
+    print(f"物体检测结果已保存到 {os.path.join(save_dir, 'gaze_object_detection_result.png')}")
 
 if __name__ == '__main__':
     main() 
