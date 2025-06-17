@@ -95,7 +95,7 @@ def visualize_all(pil_image, heatmaps, bboxes, inout_scores, inout_thresh=0.5):
 
 def main():
     # 设置图片路径和输出目录
-    image_path = "testimg_gaze_4.png"  # 在这里修改你的图片路径
+    image_path = "testimg_gaze_2.png"  # 在这里修改你的图片路径
     save_dir = "output"
     
     # 创建输出目录

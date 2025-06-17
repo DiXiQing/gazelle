@@ -66,7 +66,7 @@ def find_gazed_object(gaze_point, object_boxes, image_size):
     
     return gazed_object
 
-def visualize_results(pil_image, gaze_points, object_boxes, gazed_objects):
+def visualize_results(pil_image, gaze_points, object_boxes, gazed_objects, yolo_model):
     """Visualize gaze points and detected objects"""
     overlay_image = pil_image.copy()
     draw = ImageDraw.Draw(overlay_image)
@@ -144,7 +144,7 @@ def main():
             gazed_objects.append(gazed_object)
 
     # 可视化结果
-    result_image = visualize_results(image, gaze_points, object_boxes, gazed_objects)
+    result_image = visualize_results(image, gaze_points, object_boxes, gazed_objects, yolo_model)
     
     # 保存结果
     result_image.save(os.path.join(save_dir, 'gaze_object_detection_result.png'))
